@@ -1,0 +1,6 @@
+fx_version 'cerulean'
+game 'gta5'
+author 'Brave Developments'
+description 'Opt-in client-only animation and particle preview; development servers only'
+version '0.4.0'
+client_script 'client.lua'

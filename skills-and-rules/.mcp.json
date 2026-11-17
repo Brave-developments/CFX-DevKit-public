@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "cfx-development": {
+      "command": "python",
+      "args": [
+        "-m",
+        "cfx_devkit.profiles",
+        "development"
+      ]
+    }
+  }
+}

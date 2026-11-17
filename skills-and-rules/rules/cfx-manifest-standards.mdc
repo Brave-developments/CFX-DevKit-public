@@ -1,0 +1,5 @@
+---
+description: Valid FiveM fxmanifest.lua and dependency declarations
+alwaysApply: false
+---
+Use fx_version cerulean, game gta5, and explicit scripts/files. Only include asset/UI files that really exist. Ensure required frameworks, Ox libraries, and build outputs. Do not use rdr3 or RedM directives. Validate the manifest with cfx_validate_manifest after changes.

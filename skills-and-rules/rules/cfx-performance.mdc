@@ -1,0 +1,5 @@
+---
+description: FiveM Lua and NUI performance guidance
+alwaysApply: false
+---
+Measure before optimizing. Avoid unnecessary per-frame loops and repeated expensive natives. Prefer event-driven paths where practical. Review browser message rates and UI rerender behavior. Never claim a resource is optimized without test evidence or profiler data.

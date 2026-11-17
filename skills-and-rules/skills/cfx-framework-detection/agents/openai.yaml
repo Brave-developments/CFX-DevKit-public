@@ -1,0 +1,3 @@
+interface:
+  display_name: "framework-detection"
+  short_description: "Detect Qbox, QBCore, ESX or standalone projects"

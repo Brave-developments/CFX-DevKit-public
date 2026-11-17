@@ -1,0 +1,194 @@
+[
+  {
+    "DictionaryName": "amb@prop_human_seat_chair@male@generic@base",
+    "Animations": [
+      "base"
+    ]
+  },
+  {
+    "DictionaryName": "amb@world_human_clipboard@male@base",
+    "Animations": [
+      "base"
+    ]
+  },
+  {
+    "DictionaryName": "amb@world_human_drinking@coffee@male@idle_a",
+    "Animations": [
+      "idle_c",
+      "idle_b",
+      "idle_a"
+    ]
+  },
+  {
+    "DictionaryName": "amb@world_human_hang_out_street@male_a@base",
+    "Animations": [
+      "base"
+    ]
+  },
+  {
+    "DictionaryName": "amb@world_human_leaning@male@wall@back@hands_together@base",
+    "Animations": [
+      "base"
+    ]
+  },
+  {
+    "DictionaryName": "amb@world_human_smoking@male@male_a@base",
+    "Animations": [
+      "base"
+    ]
+  },
+  {
+    "DictionaryName": "cellphone@",
+    "Animations": [
+      "cellphone_call_to_text",
+      "cellphone_photo_exit",
+      "cellphone_call_out",
+      "f_cellphone_email_out",
+      "cellphone_text_read_base",
+      "cellphone_horizontal_base",
+      "cellphone_cellphone_intro",
+      "f_cellphone_text_read_base",
+      "cellphone_call_in",
+      "f_cellphone_call_listen_base",
+      "cellphone_down",
+      "f_cellphone_text_out",
+      "f_cellphone_email_in",
+      "cellphone_cellphone_text_base",
+      "f_cellphone_call_out",
+      "f_cellphone_email_read_base",
+      "f_cellphone_call_in",
+      "cellphone_text_to_call",
+      "cellphone_right",
+      "cellphone_up",
+      "text_in_car",
+      "cellphone_photo_ent",
+      "f_cellphone_text_in",
+      "cellphone_cellphone_outro",
+      "f_cellphone_text_read_base_cover_low",
+      "cellphone_email_read_base",
+      "cellphone_text_in",
+      "cellphone_photo_idle",
+      "text_in",
+      "cellphone_horizontal_outro",
+      "cellphone_email_in",
+      "cellphone_swipe_screen",
+      "cellphone_select",
+      "cellphone_horizontal_exit",
+      "cellphone_email_out",
+      "cellphone_call_listen_base",
+      "cellphone_text_out",
+      "text_read_base_car",
+      "cellphone_horizontal_intro",
+      "cellphone_text_read_base_cover_low",
+      "f_cellphone_call_to_text",
+      "f_cellphone_text_to_call",
+      "cellphone_left",
+      "text_out_car",
+      "f_cellphone_call_listen_no_a"
+    ]
+  },
+  {
+    "DictionaryName": "move_m@drunk@verydrunk",
+    "Animations": [
+      "wstart_r_0",
+      "idle_intro",
+      "wstart_l_0",
+      "idle",
+      "wstop_r_0",
+      "wstop_l_0",
+      "walk"
+    ]
+  },
+  {
+    "DictionaryName": "mp_arresting",
+    "Animations": [
+      "cam_uncuff",
+      "arresting_cop_shove_left_long",
+      "arrest_on_floor_front_right_cam_alt",
+      "arrest_on_floor_back_right_cam",
+      "arrested_spin_l_-90",
+      "arrest_on_floor_back_right_b",
+      "cam_b_arrest_on_floor",
+      "arrest_on_floor_front_right_cam",
+      "arrest_on_floor_front_right_b",
+      "arrest_on_floor_front_left_a",
+      "b_arrest_on_floor",
+      "arresting_cop_shove_right_short",
+      "arrest_on_floor_back_left_a",
+      "arresting_cop_shove_right_long",
+      "cam_arrest_on_floor",
+      "run",
+      "a_uncuff",
+      "idle",
+      "arrest_on_floor_back_left_b",
+      "arrest_on_floor_front_right_a",
+      "arrest_on_floor_front_left_b",
+      "arrest_on_floor_front_left_cam",
+      "a_arrest_on_floor",
+      "walk",
+      "sprint",
+      "sit",
+      "arrested_spin_l_0",
+      "arrested_spin_r_90",
+      "arrested_spin_l_-180",
+      "arrest_on_floor_front_left_cam_alt",
+      "arresting_cop_shove_left_short",
+      "arrested_spin_r_0",
+      "arrest_on_floor_back_left_cam_alt",
+      "b_uncuff",
+      "arrest_on_floor_back_right_a",
+      "arrested_spin_r_180",
+      "arrest_on_floor_back_right_cam_alt",
+      "arrest_on_floor_back_left_cam"
+    ]
+  },
+  {
+    "DictionaryName": "random@mugging3",
+    "Animations": [
+      "handsup_standing_base",
+      "sit_exit_forward",
+      "sit_base",
+      "return_wallet_positive_a_player",
+      "return_wallet_positive_a_cam",
+      "handsup_standing_enter",
+      "agitated_loop_b",
+      "return_wallet_positive_a_female",
+      "pickup_low",
+      "agitated_loop_c",
+      "agitated_loop_a",
+      "handsup_standing_exit"
+    ]
+  },
+  {
+    "DictionaryName": "random@shop_tattoo",
+    "Animations": [
+      "_impatient_a",
+      "_positive_goodbye",
+      "_negative_goodbye",
+      "_positive_b",
+      "_idle",
+      "_positive_a",
+      "_impatient_b",
+      "player_artist_finishes_up_his_tattoo",
+      "_idle_b",
+      "_neutral_to_idle",
+      "_idle_to_neutral",
+      "_idle_a",
+      "artist_artist_finishes_up_his_tattoo",
+      "_impatient_c",
+      "_idle_c",
+      "_greeting"
+    ]
+  },
+  {
+    "DictionaryName": "anim@mp_player_intuppersurrender",
+    "Animations": [
+      "enter_fp",
+      "enter",
+      "idle_a_fp",
+      "idle_a",
+      "exit_fp",
+      "exit"
+    ]
+  }
+]

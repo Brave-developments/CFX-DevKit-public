@@ -1,0 +1,54 @@
+{
+  "gta5": {
+    "PLAYER": {
+      "0x43A66C31C68491C0": {
+        "name": "GET_PLAYER_PED",
+        "description": "Gets the ped for a specified player index.",
+        "results": "Ped",
+        "params": [
+          {
+            "type": "Player",
+            "name": "playerId"
+          }
+        ]
+      }
+    },
+    "ENTITY": {
+      "0x3FEF770D40960D5A": {
+        "name": "GET_ENTITY_COORDS",
+        "description": "Gets coordinates of an entity.",
+        "results": "Vector3",
+        "params": [
+          {
+            "type": "Entity",
+            "name": "entity"
+          },
+          {
+            "type": "BOOL",
+            "name": "alive"
+          }
+        ]
+      }
+    }
+  },
+  "cfx": {
+    "CFX": {
+      "0x6B0DE401": {
+        "name": "GET_CONVAR",
+        "description": "Read a server configuration variable (use only where API set is available).",
+        "apiset": "server",
+        "results": "char*",
+        "params": [
+          {
+            "type": "char*",
+            "name": "varName"
+          },
+          {
+            "type": "char*",
+            "name": "default"
+          }
+        ]
+      }
+    }
+  }
+}

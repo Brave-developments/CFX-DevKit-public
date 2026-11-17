@@ -1,0 +1,5 @@
+---
+description: FiveM Lua reliability and API-side conventions
+alwaysApply: false
+---
+Use Lua 5.4-compatible local variables, clear functions, and precise client/server separation. Prefer actual native documentation, never invent native signatures. Validate client inputs on the server and clean up spawned objects/handlers on stop. Avoid unconditional Wait(0) loops.

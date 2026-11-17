@@ -1,0 +1,12 @@
+{
+  "name": "cfx-development",
+  "version": "1.0.0-rc.1",
+  "description": "CFX development skills and rules",
+  "mcpServers": "./.mcp.json",
+  "skills": [
+    "./skills"
+  ],
+  "rules": [
+    "./rules"
+  ]
+}

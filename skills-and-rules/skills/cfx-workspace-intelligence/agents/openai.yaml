@@ -1,0 +1,3 @@
+interface:
+  display_name: "workspace-intelligence"
+  short_description: "Explore resource structure and workspace context"

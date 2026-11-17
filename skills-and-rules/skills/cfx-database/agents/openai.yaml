@@ -1,0 +1,3 @@
+interface:
+  display_name: "database-integration"
+  short_description: "Review database setup and server queries"

@@ -1,0 +1,5 @@
+---
+description: Framework-aware FiveM Qbox QBCore ESX Ox resource guidance
+alwaysApply: false
+---
+Detect framework before calling exports. Do not mix qbx_core, qb-core, and es_extended player APIs. Validate permissions, item counts and money on the server. If a framework method is uncertain, consult installed docs and source. Keep inventory and database adapters optional and isolated.

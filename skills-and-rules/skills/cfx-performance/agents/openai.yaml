@@ -1,0 +1,3 @@
+interface:
+  display_name: "performance-optimization"
+  short_description: "Measure and review FiveM resource performance"

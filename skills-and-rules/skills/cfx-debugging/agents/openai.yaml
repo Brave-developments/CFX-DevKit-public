@@ -1,0 +1,3 @@
+interface:
+  display_name: "debugging"
+  short_description: "Investigate FiveM errors and resource behavior"

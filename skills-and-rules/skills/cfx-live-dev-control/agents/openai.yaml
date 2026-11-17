@@ -1,0 +1,3 @@
+interface:
+  display_name: "resource-control"
+  short_description: "Manage explicitly authorized development resources"

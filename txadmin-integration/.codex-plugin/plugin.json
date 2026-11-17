@@ -1,0 +1,6 @@
+{
+  "name": "cfx-txadmin",
+  "version": "1.0.0-rc.1",
+  "description": "CFX txAdmin integration",
+  "mcpServers": "./.mcp.json"
+}

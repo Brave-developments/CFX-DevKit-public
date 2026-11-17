@@ -1,0 +1,6 @@
+fx_version 'cerulean'
+game 'gta5'
+author 'Brave Developments'
+description 'Opt-in development-only resource lifecycle reporter'
+version '1.0.0-rc.1'
+server_script 'server.lua'

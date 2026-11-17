@@ -1,0 +1,6 @@
+fx_version 'cerulean'
+game 'gta5'
+author 'Brave Developments'
+description 'Opt-in human-approved dev resource control, no player-facing APIs'
+version '1.1.0-dev'
+server_script 'server.lua'

@@ -1,0 +1,3 @@
+interface:
+  display_name: "resource-deployment"
+  short_description: "Check resource packaging and deployment readiness"

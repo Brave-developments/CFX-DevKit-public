@@ -1,0 +1,7 @@
+fx_version 'cerulean'
+game 'gta5'
+author 'Brave Developments'
+description 'Explicitly armed local-only FULL dev control of FXServer and authorized FiveM test clients'
+version '1.1.0-dev'
+server_script 'server.lua'
+client_script 'client.lua'

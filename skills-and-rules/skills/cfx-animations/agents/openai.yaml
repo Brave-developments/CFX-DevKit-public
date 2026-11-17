@@ -1,0 +1,3 @@
+interface:
+  display_name: "animations"
+  short_description: "Find animation dictionaries and generate Lua"

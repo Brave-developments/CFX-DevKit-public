@@ -1,0 +1,8 @@
+fx_version 'cerulean'
+game 'gta5'
+author 'CFX DevKit'
+description 'qbox-job example'
+version '0.2.0'
+dependency 'qbx_core'
+client_script 'client/main.lua'
+server_script 'server/main.lua'

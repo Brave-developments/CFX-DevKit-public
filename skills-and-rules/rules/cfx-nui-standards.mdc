@@ -1,0 +1,5 @@
+---
+description: Secure, responsive FiveM NUI and React/Vite or Svelte build conventions
+alwaysApply: false
+---
+Use a correctly built ui_page asset directory and relative Vite base. Send client-to-browser messages via SendNUIMessage and register browser-to-client callbacks with RegisterNUICallback; always call cb in every path. Use GetParentResourceName in the NUI browser, avoid inline secrets and close focus on resource stop.

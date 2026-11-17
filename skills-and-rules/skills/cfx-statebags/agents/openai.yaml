@@ -1,0 +1,3 @@
+interface:
+  display_name: "state-bags"
+  short_description: "Plan replicated state for FiveM resources"

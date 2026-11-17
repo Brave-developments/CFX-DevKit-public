@@ -1,0 +1,3 @@
+interface:
+  display_name: "event-reference"
+  short_description: "Look up events and their resource requirements"

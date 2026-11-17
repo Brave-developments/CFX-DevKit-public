@@ -1,0 +1,3 @@
+interface:
+  display_name: "project-audit"
+  short_description: "Review manifests, dependencies and project risks"

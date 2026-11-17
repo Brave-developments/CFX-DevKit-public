@@ -1,0 +1,5 @@
+---
+description: Security principles for FiveM resource development
+alwaysApply: true
+---
+Treat all client-supplied event inputs as untrusted. Validate authoritative decisions on the server: player, role, item, price, range, rate limits, and inventory/balance operations. Parameterize SQL and keep tokens and webhooks out of client/shared/NUI files. Verify network event exposure and server runtime constraints before asserting a vulnerability. Never restart or stop a live server without explicit approval.

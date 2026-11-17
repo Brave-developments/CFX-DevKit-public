@@ -1,0 +1,401 @@
+{
+  "schema_version": 1,
+  "updated": "2026-10-24",
+  "events": [
+    {
+      "name": "baseevents:enteredVehicle",
+      "side": [
+        "server"
+      ],
+      "group": "baseevents",
+      "source_url": "https://docs.fivem.net/docs/resources/baseevents/",
+      "requires": "baseevents"
+    },
+    {
+      "name": "baseevents:enteringAborted",
+      "side": [
+        "server"
+      ],
+      "group": "baseevents",
+      "source_url": "https://docs.fivem.net/docs/resources/baseevents/",
+      "requires": "baseevents"
+    },
+    {
+      "name": "baseevents:enteringVehicle",
+      "side": [
+        "server"
+      ],
+      "group": "baseevents",
+      "source_url": "https://docs.fivem.net/docs/resources/baseevents/",
+      "requires": "baseevents"
+    },
+    {
+      "name": "baseevents:leftVehicle",
+      "side": [
+        "server"
+      ],
+      "group": "baseevents",
+      "source_url": "https://docs.fivem.net/docs/resources/baseevents/",
+      "requires": "baseevents"
+    },
+    {
+      "name": "baseevents:onPlayerDied",
+      "side": [
+        "client",
+        "server"
+      ],
+      "group": "baseevents",
+      "source_url": "https://docs.fivem.net/docs/resources/baseevents/",
+      "description": "Death event emitted by the optional baseevents resource.",
+      "requires": "baseevents"
+    },
+    {
+      "name": "baseevents:onPlayerKilled",
+      "side": [
+        "client",
+        "server"
+      ],
+      "group": "baseevents",
+      "source_url": "https://docs.fivem.net/docs/resources/baseevents/",
+      "description": "Kill event emitted by the optional baseevents resource.",
+      "requires": "baseevents"
+    },
+    {
+      "name": "baseevents:onPlayerWasted",
+      "side": [
+        "client",
+        "server"
+      ],
+      "group": "baseevents",
+      "source_url": "https://docs.fivem.net/docs/resources/baseevents/",
+      "requires": "baseevents"
+    },
+    {
+      "name": "chat:addMessage",
+      "side": [
+        "client"
+      ],
+      "group": "chat",
+      "source_url": "https://docs.fivem.net/docs/resources/chat/events/",
+      "description": "Display a chat message via the optional chat resource.",
+      "requires": "chat"
+    },
+    {
+      "name": "chat:addSuggestion",
+      "side": [
+        "client"
+      ],
+      "group": "chat",
+      "source_url": "https://docs.fivem.net/docs/resources/chat/events/",
+      "requires": "chat"
+    },
+    {
+      "name": "chat:addSuggestions",
+      "side": [
+        "client"
+      ],
+      "group": "chat",
+      "source_url": "https://docs.fivem.net/docs/resources/chat/events/",
+      "requires": "chat"
+    },
+    {
+      "name": "chat:addTemplate",
+      "side": [
+        "client"
+      ],
+      "group": "chat",
+      "source_url": "https://docs.fivem.net/docs/resources/chat/events/",
+      "requires": "chat"
+    },
+    {
+      "name": "chat:clear",
+      "side": [
+        "client"
+      ],
+      "group": "chat",
+      "source_url": "https://docs.fivem.net/docs/resources/chat/events/",
+      "requires": "chat"
+    },
+    {
+      "name": "chat:removeSuggestion",
+      "side": [
+        "client"
+      ],
+      "group": "chat",
+      "source_url": "https://docs.fivem.net/docs/resources/chat/events/",
+      "requires": "chat"
+    },
+    {
+      "name": "chatMessage",
+      "side": [
+        "client",
+        "server"
+      ],
+      "group": "chat",
+      "source_url": "https://docs.fivem.net/docs/resources/chat/events/",
+      "requires": "chat"
+    },
+    {
+      "name": "CEventName",
+      "side": [
+        "client"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/client-events/"
+    },
+    {
+      "name": "entityCreated",
+      "side": [
+        "server"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/server-events/",
+      "description": "Server entity created."
+    },
+    {
+      "name": "entityCreating",
+      "side": [
+        "server"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/server-events/",
+      "description": "Server entity creation (may be canceled)."
+    },
+    {
+      "name": "entityDamaged",
+      "side": [
+        "client"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/client-events/"
+    },
+    {
+      "name": "entityRemoved",
+      "side": [
+        "server"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/server-events/",
+      "description": "Server entity removed."
+    },
+    {
+      "name": "gameEventTriggered",
+      "side": [
+        "client"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/client-events/",
+      "description": "A game event was triggered on the client."
+    },
+    {
+      "name": "mumbleConnected",
+      "side": [
+        "client"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/client-events/"
+    },
+    {
+      "name": "mumbleDisconnected",
+      "side": [
+        "client"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/client-events/"
+    },
+    {
+      "name": "onClientResourceStart",
+      "side": [
+        "client"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/client-events/",
+      "description": "A client resource starts."
+    },
+    {
+      "name": "onClientResourceStop",
+      "side": [
+        "client"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/client-events/"
+    },
+    {
+      "name": "onEntityBucketChange",
+      "side": [
+        "server"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/server-events/"
+    },
+    {
+      "name": "onPlayerBucketChange",
+      "side": [
+        "server"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/server-events/"
+    },
+    {
+      "name": "onResourceListRefresh",
+      "side": [
+        "server"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/server-events/"
+    },
+    {
+      "name": "onResourceStart",
+      "side": [
+        "client",
+        "server"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/client-events/",
+      "description": "A resource starts."
+    },
+    {
+      "name": "onResourceStarting",
+      "side": [
+        "client",
+        "server"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/client-events/"
+    },
+    {
+      "name": "onResourceStop",
+      "side": [
+        "client",
+        "server"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/client-events/",
+      "description": "A resource stops."
+    },
+    {
+      "name": "onServerResourceStart",
+      "side": [
+        "server"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/server-events/"
+    },
+    {
+      "name": "onServerResourceStop",
+      "side": [
+        "server"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/server-events/"
+    },
+    {
+      "name": "playerConnecting",
+      "side": [
+        "server"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/server-events/",
+      "description": "A player is connecting; supports deferrals; server side."
+    },
+    {
+      "name": "playerDropped",
+      "side": [
+        "server"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/server-events/",
+      "description": "Player disconnecting from the server."
+    },
+    {
+      "name": "playerEnteredScope",
+      "side": [
+        "server"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/server-events/"
+    },
+    {
+      "name": "playerJoining",
+      "side": [
+        "server"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/server-events/",
+      "description": "Player has joined the server."
+    },
+    {
+      "name": "playerLeftScope",
+      "side": [
+        "server"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/server-events/"
+    },
+    {
+      "name": "populationPedCreating",
+      "side": [
+        "client"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/client-events/"
+    },
+    {
+      "name": "ptFxEvent",
+      "side": [
+        "server"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/server-events/"
+    },
+    {
+      "name": "rconCommand",
+      "side": [
+        "server"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/server-events/"
+    },
+    {
+      "name": "removeAllWeaponsEvent",
+      "side": [
+        "server"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/server-events/"
+    },
+    {
+      "name": "respawnPlayerPedEvent",
+      "side": [
+        "server"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/server-events/"
+    },
+    {
+      "name": "startProjectileEvent",
+      "side": [
+        "server"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/server-events/"
+    },
+    {
+      "name": "vehicleComponentControlEvent",
+      "side": [
+        "server"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/server-events/"
+    },
+    {
+      "name": "weaponDamageEvent",
+      "side": [
+        "server"
+      ],
+      "group": "core",
+      "source_url": "https://docs.fivem.net/docs/scripting-reference/events/server-events/",
+      "description": "Server receives a network weapon damage event."
+    }
+  ]
+}

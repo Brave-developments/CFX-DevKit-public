@@ -1,0 +1,3 @@
+interface:
+  display_name: "development-diagnostics"
+  short_description: "Inspect opt-in local development diagnostics"
