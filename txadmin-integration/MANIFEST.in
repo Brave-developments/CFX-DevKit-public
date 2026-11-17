@@ -1,11 +1,9 @@
 include README.md LICENSE AGENTS.md CHANGELOG.md .mcp.json
 recursive-include cfx_devkit/data *.json
 recursive-include docs *.md
-recursive-include templates *
-recursive-include snippets *
+recursive-include examples *
 recursive-include skills *.md *.yaml
 recursive-include rules *.mdc
 recursive-include .codex-plugin *.json
 recursive-include .claude-plugin *.json
 recursive-include .cursor-plugin *.json
-recursive-include examples *

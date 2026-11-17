@@ -2,7 +2,7 @@
 
 Install this package from its own folder with `python -m pip install .`.
 Register this folder's `.mcp.json` using that Python environment.
-Both folders carry the same shared runtime; installing either is sufficient.
+When using both profiles, install skills-and-rules for its coding assets.
 Each configuration exposes only its own tools.
 
 This package exposes development/reference/audit tools, skills and coding rules.
