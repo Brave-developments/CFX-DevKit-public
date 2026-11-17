@@ -96,3 +96,30 @@ Broker: token-protected HTTP bound only to `127.0.0.1:8767`. Command body is era
 **This is powerful enough to damage an FXServer installation if misused.** A malicious local process, compromised token or already-malicious game resource may bypass portions of the controls. Do not enable it on a production/public server.
 
 Before calling it live-ready, test an authenticated poll, `server_info`, a harmless Lua expression, a resource restart, an authorized client action, an unauthorized client refusal, log inspection, session expiry and emergency disarm in a real disposable FiveM environment.
+
+## Console output without a log file
+
+For the server channel, `cfx_live_log` uses the configured server log if present.
+Without a configured path it now queues an authorized server-Lua read of FiveM's
+`GetConsoleBuffer()` through the existing bridge. No RCON, listener resource,
+new permission grant or server restart is required for that native read.
+
+The response identifies `source: native-console-buffer`, returns a recent bounded
+snapshot (up to 2,500 bytes before filtering), and redacts known bridge tokens.
+It may report `pending` with a request ID if polling is delayed. The snapshot is
+not complete history or uniquely correlated to one command. A command being
+accepted does not establish success; inspect its subsequent output/state.
+
+Existing connections on older Python packages can use `cfx_live_run` with
+`kind=server_lua` to read `GetConsoleBuffer()` and inspect `cfx_live_result`.
+Client console logs still require a client log source; server console access does
+not grant access to other players' machines. Raw output can contain private
+operational data and must not be published as a public QA artifact.
+
+Native documentation: https://github.com/citizenfx/fivem/blob/master/ext/native-decls/GetConsoleBuffer.md
+
+Internal console reads are tagged at enqueue. Their retained result is redacted
+on ingestion and on every result/history route. After authorization is revoked,
+those console results are withheld even when they completed earlier. Known server
+bridge convars are redacted before trimming the native buffer. Configured file
+reads discard an initial partial line and redact before the final output crop.

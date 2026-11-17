@@ -260,8 +260,9 @@ console log or authorize server changes.
 2. Follow [server discovery/setup](txadmin-integration/docs/FXSERVER_STARTUP.md)
    for the correct executable, config and txAdmin profile. Native managed mutation
    remains gated; do not bypass that gate.
-3. For console output, configure the appropriate local log paths and use
-   `cfx_live_log`; see [Full Control setup](txadmin-integration/docs/FULL_CONTROL.md).
+3. For server console output, use `cfx_live_log`: it reads a configured log file
+   or falls back to the native console buffer when no server log path is set.
+   Client logs still need a client log source; see [Full Control setup](txadmin-integration/docs/FULL_CONTROL.md).
 4. For resource lifecycle diagnostics, install the reporter described in
    [development diagnostics](txadmin-integration/docs/DEV_BRIDGE.md).
 5. For authorized console/resource/in-game actions, install the matching connection

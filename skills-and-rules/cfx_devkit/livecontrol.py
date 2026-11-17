@@ -60,6 +60,7 @@ def _connect_raw():
        status TEXT NOT NULL, result TEXT, finished_at INTEGER)""")
     conn.execute("""CREATE TABLE IF NOT EXISTS runtime
       (id INTEGER PRIMARY KEY CHECK(id=1), last_poll_at INTEGER NOT NULL)""")
+    conn.execute("CREATE TABLE IF NOT EXISTS console_reads (id TEXT PRIMARY KEY)")
     return conn
 
 @contextmanager
@@ -145,19 +146,36 @@ def status(request_id=None,limit=15):
                 "mode":"full" if session else "locked","bound_host":HOST,"port":PORT}
         if request_id:
             row=conn.execute("SELECT * FROM requests WHERE id=?",(request_id,)).fetchone()
-            result["request"]=_row(row) if row else None
+            result["request"]=_row(row, conn) if row else None
         else:
             rows=conn.execute("SELECT * FROM requests ORDER BY created_at DESC,id DESC LIMIT ?",(limit,)).fetchall()
-            result["recent"]=[_row(row) for row in rows]
+            result["recent"]=[_row(row, conn) for row in rows]
     result["note"]="Status reflects local queue and latest FXServer poll, not proof of game/test success."
     return result
 
-def _row(row):
+def _row(row, conn):
     # Never expose submitted Lua code or original server commands through listing.
-    return {"id":row["id"],"kind":row["kind"],"target":row["target"],"status":row["status"],
+    report = json.loads(row["result"]) if row["result"] else None
+    console = conn.execute("SELECT id FROM console_reads WHERE id=?", (row["id"],)).fetchone() is not None
+    withheld = False
+    if console:
+        try:
+            _config()
+            authorized = _active(conn) is not None
+        except ValueError:
+            authorized = False
+        if authorized:
+            report = _redact_result(report)
+        else:
+            report = None
+            withheld = True
+    result = {"id":row["id"],"kind":row["kind"],"target":row["target"],"status":row["status"],
             "created_at":row["created_at"],"expires_at":row["expires_at"],
             "finished_at":row["finished_at"],
-            "result":json.loads(row["result"]) if row["result"] else None}
+            "result":report}
+    if console:
+        result.update(source="native-console-buffer", result_withheld=withheld)
+    return result
 
 def _payload(kind,body,target):
     if not isinstance(kind,str) or kind not in KINDS:raise ValueError("Unsupported game operation")
@@ -201,9 +219,11 @@ def _payload(kind,body,target):
                     raise ValueError("Invalid animation identifier")
     return data
 
-def submit(kind,payload_json="{}",target=0):
+def submit(kind,payload_json="{}",target=0, _console_read=False):
     _config()
     data=_payload(kind,payload_json,target)
+    if _console_read and kind != "server_lua":
+        raise ValueError("Console reads require the fixed server-Lua operation")
     encoded=json.dumps(data,separators=(",",":"),ensure_ascii=False)
     with _connect() as conn:
         conn.execute("BEGIN IMMEDIATE")
@@ -214,6 +234,8 @@ def submit(kind,payload_json="{}",target=0):
         request_id=secrets.token_hex(16)
         conn.execute("INSERT INTO requests VALUES(?,?,?,?,?,?,?,NULL,NULL)",
                      (request_id,kind,target,encoded,_now(),deadline,"queued"))
+        if _console_read:
+            conn.execute("INSERT INTO console_reads VALUES(?)", (request_id,))
     return {"id":request_id,"kind":kind,"target":target,"status":"queued","executed":False,
             "expires_at":deadline,"instructions":"Check cfx_live_result for observed outcome. Game server polling must be active."}
 
@@ -250,10 +272,87 @@ def accept_result(payload):
     with _connect() as conn:
         row=conn.execute("SELECT status FROM requests WHERE id=?",(request_id,)).fetchone()
         if row is None or row["status"]!="sent":raise ValueError("Unknown or already finalized request")
+        if conn.execute("SELECT id FROM console_reads WHERE id=?", (request_id,)).fetchone():
+            raw = json.dumps(_redact_result(value), ensure_ascii=False, default=str)
+            if len(raw.encode("utf-8")) > MAX_RESULT:
+                raw = json.dumps({"ok": False, "error": "Console result exceeds the safe response limit after redaction"})
         changes=conn.execute("UPDATE requests SET status='done',result=?,finished_at=? WHERE id=? AND status='sent'",
                             (raw,_now(),request_id))
         if changes.rowcount!=1:raise ValueError("Result race; request was already completed")
     return {"accepted":True}
+
+def _redact_log(value):
+    for name in ("CFX_LIVE_TOKEN", "CFX_BRIDGE_TOKEN"):
+        secret = os.environ.get(name, "")
+        if secret:
+            value = value.replace(secret, "[REDACTED_TOKEN]")
+    return value
+
+
+def _redact_result(value, depth=0):
+    if depth >= 64:
+        return "[TRUNCATED_RESULT]"
+    if isinstance(value, str):
+        return _redact_log(value)
+    if isinstance(value, dict):
+        return {_redact_log(str(key)): _redact_result(item, depth + 1) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_redact_result(item, depth + 1) for item in value]
+    return value
+
+
+def _native_console_tail(lines, contains):
+    # Uses the existing authorized server-Lua channel: no new endpoint, resource
+    # hook or file access. The small limit also supports older execution resources
+    # which duplicate successful values in their legacy error field.
+    code = r'''local function redact(text, secret)
+    if type(secret) ~= 'string' or #secret == 0 then return text end
+    local pieces, position = {}, 1
+    while true do
+        local first, last = text:find(secret, position, true)
+        if not first then pieces[#pieces + 1] = text:sub(position); break end
+        pieces[#pieces + 1] = text:sub(position, first - 1)
+        pieces[#pieces + 1] = '[REDACTED_TOKEN]'
+        position = last + 1
+    end
+    return table.concat(pieces)
+end
+local value = GetConsoleBuffer()
+if type(value) ~= 'string' then error('Console buffer unavailable') end
+for _, name in ipairs({'devkit_live_token', 'devkit_bridge_token', 'devkit_control_token'}) do
+    value = redact(value, GetConvar(name, ''))
+end
+local tail = value:sub(-2500)
+tail = tail:gsub('^[\128-\191]+', '')
+return tail'''
+    request = submit("server_lua", json.dumps({"code": code}), _console_read=True)
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline:
+        observed = status(request["id"]).get("request", {})
+        state = observed.get("status")
+        if state == "done":
+            # Recheck authorization before returning potentially private output.
+            _config()
+            with _connect() as conn:
+                if not _active(conn):
+                    raise ValueError("Console access is no longer authorized")
+            report = observed.get("result") or {}
+            if report.get("ok") is not True or not isinstance(report.get("value"), str):
+                raise ValueError("FXServer console buffer unavailable; inspect cfx_live_result for " + request["id"])
+            value = _redact_log(report["value"])
+            found = [line for line in value.splitlines() if contains.casefold() in line.casefold()]
+            return {"channel": "server", "source": "native-console-buffer", "pending": False,
+                    "request_id": request["id"], "matched_lines": len(found),
+                    "lines": "\n".join(found[-lines:]), "buffer_limit_bytes": 2500,
+                    "limited_to_recent_buffer": True,
+                    "note": "Recent FXServer console snapshot, not command-correlated output or complete history. May contain private operational data."}
+        if state in {"cancelled", "expired", "timed_out"}:
+            raise ValueError("Console buffer request did not complete: " + state)
+        time.sleep(0.1)
+    return {"channel": "server", "source": "native-console-buffer", "pending": True,
+            "request_id": request["id"], "lines": "",
+            "note": "Buffer read queued; inspect cfx_live_result. Server polling may be delayed."}
+
 
 def tail_log(channel="server",lines=60,contains=""):
     """Read a bounded tail of a specifically configured LOCAL dev log, without files tool access."""
@@ -267,18 +366,22 @@ def tail_log(channel="server",lines=60,contains=""):
         if not _active(conn):raise ValueError("Arm full control before accessing the game log")
     env="CFX_LIVE_SERVER_LOG" if channel=="server" else "CFX_LIVE_CLIENT_LOG"
     target=os.environ.get(env,"")
+    if not target and channel == "server":
+        return _native_console_tail(lines, contains)
     if not target:raise ValueError("Set "+env+" to the exact local development log file")
     path=Path(target).expanduser().resolve()
     if not path.is_file() or path.suffix.casefold() not in (".log",".txt"):
         raise ValueError("Expected a local .log or .txt file")
     with path.open("rb") as stream:
         size=path.stat().st_size
-        stream.seek(max(0,size-32000))
+        offset = max(0,size-32000)
+        stream.seek(offset)
         content=stream.read(32000).decode("utf-8",errors="replace")
+    if offset:
+        # Do not expose a token suffix from a line cut at the read boundary.
+        content = content.partition("\n")[2]
     found=[x for x in content.splitlines() if contains.casefold() in x.casefold()]
-    rendered="\n".join(found[-lines:])[-12000:]
-    token=os.environ.get("CFX_LIVE_TOKEN","")
-    if token:rendered=rendered.replace(token,"[REDACTED_TOKEN]")
+    rendered=_redact_log("\n".join(found[-lines:]))[-12000:]
     return {"channel":channel,"matched_lines":len(found),"lines":rendered,
             "truncated_bytes":size>32000,"note":"Only the configured development log tail. Client identifiers or other private log content may be present."}
 

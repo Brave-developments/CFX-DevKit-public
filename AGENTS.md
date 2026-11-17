@@ -75,3 +75,14 @@ Server startup remains a distinct permission: inspect `cfx_fxserver_status`, use
 the exact captured launch target, and respect the native txAdmin review gate.
 Missing log paths or client ACE authorization are setup gaps, not reasons to
 simulate a human TTY. Host connector approval is still controlled by the host.
+
+# Missing console log file
+
+A missing `CFX_LIVE_SERVER_LOG` is not a reason to ask the owner to configure logs
+or re-approve the connector. For an authorized server connection, current
+`cfx_live_log` falls back to the native console buffer. On older installed Python
+packages, use the existing `cfx_live_run` server-Lua channel to read
+`GetConsoleBuffer()` and inspect the completed result. Read a bounded tail, handle
+UTF-8 safely, and redact secrets before showing output. Do not register a console
+listener or restart the server solely to obtain console text. Never claim a
+command succeeded from ExecuteCommand acceptance alone.
