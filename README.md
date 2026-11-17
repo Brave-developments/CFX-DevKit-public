@@ -60,6 +60,15 @@ remains review-gated. See
 [AI installation details](txadmin-integration/docs/AI_INSTALLATION.md).
 The opt-in delegation changes passed an [independent code/security review](txadmin-integration/docs/UNATTENDED_SECURITY_REVIEW.md); live server/gameplay acceptance remains separate.
 
+## Already installed but the AI asks you to type an arming phrase?
+
+Ask it to check `cfx_live_status`. With `armed: true` and
+`authorization_mode: owner-delegated-until-revoked`, unattended Full Control is
+already authorized. The manual `arm()` functions remain for legacy/manual mode;
+they are not a required step for an active delegated connection. The AI should
+use the available Full Control tools rather than the separate manual controller.
+If the mode is locked, check the installed delegation policy and selected target.
+
 ## 1. Download and install
 
 Install Git and Python 3.10 or newer, then run these commands in a terminal.

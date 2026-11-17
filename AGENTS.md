@@ -56,3 +56,22 @@ client identity/ACE authorization; never guess or grant access to everyone.
 To revoke delegated control, use the installed Python with
 `-m cfx_devkit.connection --settings "<private-connection.json>" --revoke`.
 This cancels queued commands; already dispatched commands cannot be undone.
+
+# Active unattended connections
+
+Before requesting any human terminal step, call `cfx_live_status`. If its
+`authorization_mode` is `owner-delegated-until-revoked` and `armed` is true,
+CFX Full Control is already authorized. Do not invoke `live-arm`, `gameinput.arm`,
+or another manual approval CLI just because those legacy functions exist in
+source code. Do not ask the owner to type their phrases.
+
+Use `cfx_live_run` for delegated console/resource operations, and inspect the
+observed result with `cfx_live_result`. For example, resource lifecycle commands
+use kind `server_command` with the appropriate JSON command payload. Do not route
+a delegated Full Control task through the separate legacy proposal/approval
+controller and then report its manual approval as a requirement of Full Control.
+
+Server startup remains a distinct permission: inspect `cfx_fxserver_status`, use
+the exact captured launch target, and respect the native txAdmin review gate.
+Missing log paths or client ACE authorization are setup gaps, not reasons to
+simulate a human TTY. Host connector approval is still controlled by the host.
