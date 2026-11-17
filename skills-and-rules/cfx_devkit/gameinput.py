@@ -30,6 +30,9 @@ def _windows():
     if sys.platform!="win32":raise ValueError("In-game input works only on Windows")
 
 def permission():
+    from . import delegation
+    if delegation.allows("game-input"):
+        return {"approved": True, "expires_at": None, "authorization_mode": "owner-delegated-until-revoked"}
     try:
         data=json.loads(_path().read_text(encoding="utf-8"))
         expires=int(data["expires_at"])
@@ -57,6 +60,8 @@ def arm(minutes=15):
     return permission()
 
 def disarm():
+    from . import delegation
+    delegation.revoke("game-input")
     _path().unlink(missing_ok=True)
     return {"approved":False}
 

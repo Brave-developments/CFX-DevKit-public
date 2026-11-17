@@ -1,6 +1,6 @@
 """AI-runnable local installer. Preview first; --apply installs without terminal prompts.
 
-Does not approve tools, arm Full Control, launch/restart FXServer or enable txAdmin mutation.
+Never approves host connector permissions or launches/restarts FXServer during installation.
 """
 from pathlib import Path
 import argparse
@@ -94,6 +94,9 @@ def write_private(path, text):
 def apply_changes(changes):
     originals = {path: (path.read_bytes(), path.stat().st_mode) if path.exists() else None
                  for path, _ in changes}
+    private_folders = {parent for path, _ in changes for parent in path.parents if parent.name == ".cfx-devkit"}
+    for folder in private_folders:
+        restrict_private_folder(folder)
     attempted = []
     try:
         for path, content in changes:
@@ -110,6 +113,31 @@ def apply_changes(changes):
                 path.write_bytes(original[0])
                 os.chmod(path, original[1])
         raise
+
+
+def restrict_private_folder(folder):
+    folder.mkdir(parents=True, exist_ok=True)
+    if os.name != "nt":
+        os.chmod(folder, 0o700)
+        return
+    # chmod alone does not protect Windows secrets. Use an explicit protected DACL.
+    powershell = Path(os.environ["SystemRoot"]) / "System32/WindowsPowerShell/v1.0/powershell.exe"
+    script = r'''
+$ErrorActionPreference = 'Stop'
+$acl = New-Object System.Security.AccessControl.DirectorySecurity
+$acl.SetAccessRuleProtection($true, $false)
+$owner = [System.Security.Principal.WindowsIdentity]::GetCurrent().User
+$acl.SetOwner($owner)
+foreach ($sid in @($owner, [System.Security.Principal.SecurityIdentifier]'S-1-5-18', [System.Security.Principal.SecurityIdentifier]'S-1-5-32-544')) {
+    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule($sid, 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow')
+    $acl.AddAccessRule($rule)
+}
+[System.IO.Directory]::SetAccessControl($env:CFX_SETUP_PRIVATE_DIR, $acl)
+'''
+    result = subprocess.run([str(powershell), "-NoProfile", "-NonInteractive", "-Command", script],
+                            env={**os.environ, "CFX_SETUP_PRIVATE_DIR": str(folder)}, capture_output=True, text=True)
+    if result.returncode:
+        raise OSError("Cannot protect private connection directory")
 
 
 def host_path(host, home):
@@ -146,10 +174,16 @@ def configure_host(path, host, entries):
     return json.dumps(data, indent=2) + "\n"
 
 
-def prepare(workspace, host, profile="both", server_cfg=None, home=None):
+def prepare(workspace, host, profile="both", server_cfg=None, home=None, unattended=False, port=30120, launch_target=None):
+    if unattended and profile == "development":
+        raise ValueError("Unattended control requires the integration profile")
+    if launch_target is not None and not re.fullmatch(r"[a-f0-9]{64}", launch_target):
+        raise ValueError("Server launch target must be the complete verified target_id")
     workspace = Path(workspace).resolve()
     if not workspace.is_dir():
         raise ValueError("Workspace must be an existing directory")
+    if not isinstance(port, int) or isinstance(port, bool) or not 1024 <= port <= 65535:
+        raise ValueError("Port must be 1024..65535")
     home = Path(home or Path.home()).resolve()
     config_path = checked(workspace / ".roo/mcp.json", workspace) if host == "roo" else host_path(host, home)
     python = ROOT / ".venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
@@ -167,12 +201,19 @@ def prepare(workspace, host, profile="both", server_cfg=None, home=None):
         private = checked(cfg.parent / ".cfx-devkit", workspace)
         state = checked(private / "connection.json", workspace)
         old = json.loads(state.read_text(encoding="utf-8")) if state.exists() else {}
-        token = old.get("env", {}).get("CFX_LIVE_TOKEN") or secrets.token_urlsafe(48)
+        token = secrets.token_urlsafe(48) if unattended else old.get("env", {}).get("CFX_LIVE_TOKEN") or secrets.token_urlsafe(48)
         if not isinstance(token, str) or not re.fullmatch(r"[A-Za-z0-9_-]{32,256}", token):
             raise ValueError("Invalid existing connection token")
         cache = checked(private / ("data-" + hashlib.sha256(token.encode()).hexdigest()[:16]), workspace)
+        policy_file = checked(private / "delegation.json", workspace)
+        permissions = ["full-control", "client-launch", "game-input"]
+        if launch_target:
+            permissions.append("server-launch")
+        policy = {"version": 1, "grant_id": secrets.token_hex(16), "enabled": bool(unattended), "workspace": str(workspace),
+                  "server_config": str(cfg.resolve()), "token_hash": hashlib.sha256(token.encode()).hexdigest(),
+                  "port": port, "server_launch_target": launch_target, "permissions": permissions}
         live_env = {**env, "CFX_LIVE_ENABLE": "1", "CFX_LIVE_MODE": "full", "CFX_LIVE_TOKEN": token,
-                    "CFX_DEVKIT_DATA_DIR": str(cache)}
+                    "CFX_DEVKIT_DATA_DIR": str(cache), "CFX_LIVE_POLICY_FILE": str(policy_file)}
         settings = json.dumps({"env": live_env}, indent=2) + "\n"
         private_cfg = checked(private / "connection.cfg", workspace)
         cfg_text = cfg.read_text(encoding="utf-8-sig")
@@ -192,7 +233,7 @@ def prepare(workspace, host, profile="both", server_cfg=None, home=None):
             if target.exists() and target.read_text(encoding="utf-8") != content:
                 raise ValueError("Existing connection resource differs; refusing to overwrite it")
             changes.append((target, content))
-        changes.extend([(state, settings), (private_cfg,
+        changes.extend([(state, settings), (policy_file, json.dumps(policy, indent=2) + "\n"), (private_cfg,
             'set devkit_live_enable 1\nset devkit_live_mode "full"\n'
             + 'set devkit_live_token "' + token + '"\nsetr devkit_live_client_enabled 0\n'),
             (cfg, managed_block(cfg_text, 'exec .cfx-devkit/connection.cfg\nensure cfx-devkit-live'))])
@@ -209,11 +250,21 @@ def main():
     parser.add_argument("--profile", choices=("both", "development", "integration"), default="both")
     parser.add_argument("--server-cfg", type=Path)
     parser.add_argument("--apply", action="store_true")
+    parser.add_argument("--allow-unattended-control", action="store_true",
+                        help="Delegate console/Lua, FiveM launch and foreground input until revoked; server launch additionally requires --server-launch-target")
+    parser.add_argument("--port", type=int, default=30120)
+    parser.add_argument("--server-launch-target", help="Complete selected target_id from cfx_fxserver_status; omitted means no delegated server launch")
     args = parser.parse_args()
-    python, changes = prepare(args.workspace, args.host, args.profile, args.server_cfg)
+    python, changes = prepare(args.workspace, args.host, args.profile, args.server_cfg,
+                              unattended=args.allow_unattended_control, port=args.port, launch_target=args.server_launch_target)
     if not args.apply:
         print(json.dumps({"preview": True, "files": [str(path) for path, _ in changes],
-                          "next": "Repeat with --apply after reviewing the selected paths"}))
+                          "unattended_control": args.allow_unattended_control,
+                          "delegated_permissions": (["full-control", "client-launch", "game-input"] +
+                                                    (["server-launch"] if args.server_launch_target else [])) if args.allow_unattended_control else [],
+                          "delegation_duration": "until revoked" if args.allow_unattended_control else None,
+                          "server_launch_target": args.server_launch_target,
+                          "next": "Repeat with --apply after reviewing the selected paths and privileges"}))
         return
     if not python.exists():
         venv.EnvBuilder(with_pip=True).create(ROOT / ".venv")
@@ -224,8 +275,8 @@ def main():
     subprocess.run([str(python), "-m", "pip", "install", str(package)], check=True)
     apply_changes(changes)
     print(json.dumps({"installed": True, "host": args.host, "server_restarted": False,
-        "control_armed": False, "client_execution_enabled": False,
-        "next": "Enable the connector in your AI app. Start only cfx-devkit-live through an existing authorized connection; otherwise the resource loads on the next normal server start. Full Control still requires the owner's local approval."}))
+        "delegation_enabled": args.allow_unattended_control, "client_execution_enabled": False,
+        "next": "Enable the connector in your AI app. Load cfx-devkit-live through an existing authorized connection or the next normal server start. Unattended delegation removes CFX terminal arming only; host approvals and the native txAdmin review gate remain."}))
 
 
 if __name__ == "__main__":

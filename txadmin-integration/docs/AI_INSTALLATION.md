@@ -37,11 +37,43 @@ server/host writes begin only after dependency installation succeeds. File-write
 failures trigger rollback of preceding writes. Empty created directories or
 backups can remain after a failure.
 
+## Optional unattended CFX control
+
+If the owner explicitly authorizes unattended control of this local development
+server, the AI can add `--allow-unattended-control` to preview and apply. This
+creates a private delegation policy bound to the workspace, selected config and
+connection token. It authorizes existing Full Control tools, FiveM launch and
+foreground input without repeated CFX terminal prompts. FXServer launch is
+excluded unless `--server-launch-target <target_id>` pins the complete selected
+identity returned by `cfx_fxserver_status`. A different executable, mode or
+managed profile receives a different identity and cannot inherit permission.
+
+The preview lists the exact scopes and persistent duration before any changes.
+Delegation lasts until revoked. `cfx_live_status` reports its authorization mode
+and a null expiry to distinguish it from an expiring manual session. Changes to
+the token, workspace or selected config invalidate authorization. This is trusted
+local-user delegation, not isolation from other processes running as that user.
+
+Revoke with the installed Python:
+
+```powershell
+<installed-python> -m cfx_devkit.connection --settings "<private-connection.json>" --revoke
+```
+
+Revocation is checked on subsequent requests/polls and cancels queued work.
+Per-grant revocation markers only accumulate, so concurrent revocations cannot
+re-enable each other. To grant access again, rerun the installer with explicit
+unattended consent; this creates a new grant and token.
+Already dispatched game commands cannot be undone. Native txAdmin mutation stays
+review-gated. Client Lua/actions still require the proper ACE-authorized client;
+the installer does not grant access to every connected player.
+
 ## What is still an approval, rather than installation?
 
-The installer does not approve the connector in Freebuff or another host, arm a
-Full Control session, start/restart FXServer, or change the native txAdmin review
-gate. It installs no RCON password. Broker ports remain loopback-only.
+The installer does not approve the connector in Freebuff or another host,
+start/restart FXServer during installation, or change the native txAdmin review
+gate. Normal mode still requires terminal approval; explicitly opted-in delegated
+mode authorizes the existing CFX actions without that extra terminal step. It installs no RCON password. Broker ports remain loopback-only.
 
 On an already running server, configuration changes are not automatically loaded.
 After checks, the AI needs an existing authorized console connection to execute
@@ -58,9 +90,9 @@ For the existing Full Control approval, the owner uses:
 ```
 
 This loads the same private connection settings and uses the existing human
-terminal approval. Automatic arming and a replacement app-only approval flow are
-not implemented by this installer. Replacing that authorization design requires
-the independent review required by the project instructions.
+terminal approval. The explicit delegated mode described above is available instead. It is not a
+Freebuff approval API and never writes the host's internal permission records.
+Native managed txAdmin changes still require independent security review.
 
 Log-tail access additionally needs the relevant existing log path in private
 connection settings (`CFX_LIVE_SERVER_LOG` / `CFX_LIVE_CLIENT_LOG`). The installer
@@ -69,3 +101,20 @@ does not guess which log contains the intended server's console output.
 Verify each stage separately: tools available, broker running, resource polling,
 then authorization active. A successful installation is not proof of gameplay,
 live console execution or production readiness.
+
+## Private storage permissions
+
+The installer applies an explicit protected Windows DACL to `.cfx-devkit`, allowing
+only the installing user, SYSTEM and Administrators. On POSIX it uses mode 0700.
+New secret files inherit the private directory restrictions. Failure to establish
+those restrictions aborts setup before server/host files are written. The local
+FXServer must run as the installing user (or SYSTEM/Administrator on Windows).
+Unattended opt-in rotates the token; old backups cannot authorize the new grant.
+The host must reload its connector and the resource must load the new private
+configuration after reinstalling. Do not use this as an isolation mechanism from
+other processes running as the same user or from administrators.
+
+Revocation uses the protected grant identity even if the server config is
+temporarily missing, the token is mismatched or the policy is currently disabled.
+If no readable valid grant identity exists, `--revoke` reports incomplete
+delegation revocation and exits unsuccessfully; it does not claim a lasting stop.

@@ -21,7 +21,7 @@ This repository targets **FiveM/GTA V only** (no RedM/RDR2).
 
 - Experimental resource controller must remain separate from the read-only diagnostic bridge, with manual terminal approval and resource/action allowlists enforced on both host and FXServer. Never extend to arbitrary command execution or player control without an independent security review.
 
-- Full Control uses a separate local, manually armed development-only session. Never expose live broker ports externally, publish secrets, add an MCP arm method, or route client events to server Lua execution. Keep server-private tokens private and ACE-limit client commands.
+- Full Control uses a separate local development-only session. Manual terminal approval remains the default; an owner can explicitly opt into revocable, server/token-bound unattended delegation with `--allow-unattended-control`. A generic installation request is not consent to unattended control. Never expose live broker ports externally, publish secrets, add an MCP arm method, or route client events to server Lua execution. Keep server-private tokens private and ACE-limit client commands.
 
 ## Owner Lua and NUI conventions
 

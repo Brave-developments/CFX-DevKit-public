@@ -36,6 +36,10 @@ def _client_path():
     return candidate.resolve()
 
 def permission():
+    from . import delegation
+    delegated = delegation.allows("client-launch")
+    if delegated:
+        return {"approved": True, "expires_at": None, "port": delegated["port"], "authorization_mode": "owner-delegated-until-revoked"}
     try:
         data=json.loads(_grant_path().read_text(encoding="utf-8"))
         expiry=int(data["expires_at"])
@@ -68,6 +72,8 @@ def arm(port=DEFAULT_PORT, minutes=15):
     return permission()
 
 def disarm():
+    from . import delegation
+    delegation.revoke("client-launch")
     _grant_path().unlink(missing_ok=True)
     return {"approved":False}
 

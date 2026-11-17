@@ -32,20 +32,28 @@ unlock it. See [startup support](txadmin-integration/docs/FXSERVER_STARTUP.md) a
 
 Give an AI with local file/shell access this request:
 
-> Install CFX DevKit for Freebuff using my FiveM server folder. Run the installer
+> Install CFX DevKit for Freebuff and allow unattended CFX control of my local
+> development server. Run the installer
 > preview, verify the target server, then apply setup. Handle files, dependencies
 > and tokens yourself; tell me which connection or approval steps remain.
 
 From a downloaded checkout, the AI runs `python install.py --host freebuff
 --workspace "C:/FiveM"`, checks the preview, then repeats with `--apply`.
+If the owner explicitly delegates control, include `--allow-unattended-control`
+in both commands. This authorizes privileged console/Lua tools, FiveM launch and
+foreground input until revoked for that server. FXServer launch additionally needs
+`--server-launch-target <target_id>` captured from `cfx_fxserver_status`; changing
+the executable, mode or managed profile invalidates that launch delegation. It is not enabled by default.
 Other installer hosts: `cursor`, `claude` (Claude Code), `gemini`, `roo`, `copilot`,
 and `codex`. Add `--server-cfg` if multiple server profiles exist.
 
 This automates installation, private token generation, host configuration and the
-server connection resource. The integration starts its own local broker. Host
-connector approval and the existing human Full Control arming are still separate;
-app-only authorization has not replaced terminal arming. See
+server connection resource. The integration starts its own local broker. The
+opt-in delegated mode removes CFX terminal arming; normal installations keep it.
+The AI app still controls its own connector approvals. Native txAdmin mutation
+remains review-gated. See
 [AI installation details](txadmin-integration/docs/AI_INSTALLATION.md).
+The opt-in delegation changes passed an [independent code/security review](txadmin-integration/docs/UNATTENDED_SECURITY_REVIEW.md); live server/gameplay acceptance remains separate.
 
 ## 1. Download and install
 

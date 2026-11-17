@@ -8,6 +8,14 @@ An AI assistant may now inspect FXServer status, resource states and developer c
 
 Full Control does **not** automatically include a Windows/OS shell, SSH, database credentials, desktop screenshot capture or browser DevTools automation.
 
+## Unattended installation option
+
+An owner can explicitly opt into `install.py --allow-unattended-control`. This
+creates revocable, server-bound trusted-local-user delegation instead of requiring
+repeated terminal arming. See [AI installation](AI_INSTALLATION.md). Without that
+option, the manual approval steps below remain required. Host MCP approval is
+separate; native txAdmin mutation remains review-gated.
+
 ## Installation
 
 In PowerShell, generate one private random token:

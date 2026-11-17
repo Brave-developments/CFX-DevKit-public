@@ -1,6 +1,6 @@
 """Launch an installed integration with its private, installer-created settings.
 
-Starts only the loopback broker, never FXServer or an authorization session.
+Starts the loopback broker. Explicit owner delegation can authorize existing tools.
 """
 from pathlib import Path
 import argparse
@@ -15,6 +15,7 @@ ENV_KEYS = frozenset({
     "CFX_LIVE_ENABLE", "CFX_LIVE_MODE", "CFX_LIVE_TOKEN",
     "CFX_LIVE_SERVER_LOG", "CFX_LIVE_CLIENT_LOG",
     "CFX_DEVKIT_DATA_DIR",
+    "CFX_LIVE_POLICY_FILE",
 })
 
 
@@ -32,8 +33,15 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--settings", required=True, type=Path)
     parser.add_argument("--arm", action="store_true", help="Human interactive approval using this connection's settings")
+    parser.add_argument("--revoke", action="store_true", help="Revoke this connection's delegated control and cancel queued work")
     args = parser.parse_args()
     os.environ.update(load_settings(args.settings))
+    if args.revoke:
+        result = livecontrol.disarm()
+        print(json.dumps(result))
+        if result["delegation_revocation"].get("reason") == "no-valid-grant":
+            raise SystemExit(1)
+        return
     if args.arm:
         print(json.dumps(livecontrol.arm()))
         return

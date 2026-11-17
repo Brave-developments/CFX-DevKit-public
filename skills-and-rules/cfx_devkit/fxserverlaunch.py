@@ -85,6 +85,20 @@ def _config():
     return Path(selected['executable']),Path(selected['config'])
 
 def permission():
+    from . import delegation
+    delegated = delegation.allows("server-launch")
+    if delegated:
+        try:
+            selected = configuration().get("selected")
+            workspace = Path(delegated["workspace"])
+            if (selected and Path(selected["config"]).resolve() == Path(delegated["server_config"]).resolve()
+                    and Path(selected["executable"]).resolve().is_relative_to(workspace)
+                    and selected["target_id"] == delegated.get("server_launch_target")):
+                return {"approved": True, "expires_at": None, "port": delegated["port"],
+                        "target_id": selected["target_id"], "authorization_mode": "owner-delegated-until-revoked"}
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
+        return {"approved": False, "expires_at": None, "port": None}
     try:
         value=json.loads(_grant_path().read_text(encoding="utf-8"))
         expiry=int(value["expires_at"])
@@ -119,6 +133,8 @@ def arm(port=30120,minutes=15):
     return permission()
 
 def disarm():
+    from . import delegation
+    delegation.revoke("server-launch")
     _grant_path().unlink(missing_ok=True)
     return {"approved":False}
 

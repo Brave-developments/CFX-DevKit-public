@@ -78,10 +78,13 @@ def _config():
         raise ValueError("Full control is disabled: requires CFX_LIVE_ENABLE=1 and CFX_LIVE_MODE=full")
     token=os.environ.get("CFX_LIVE_TOKEN","")
     if not 32<=len(token)<=256 or any(not 33<=ord(x)<=126 for x in token):
-        raise ValueError("Configure a unique private CFX_LIVE_TOKEN of 32–256 nonspace ASCII characters")
+        raise ValueError("Configure a unique private CFX_LIVE_TOKEN of 32â€“256 nonspace ASCII characters")
     return token
 
 def _active(conn):
+    from . import delegation
+    if delegation.allows("full-control"):
+        return {"expires_at": _now() + SESSION_MAX, "reason": "owner-delegated-until-revoked"}
     row=conn.execute("SELECT started_at,expires_at,reason FROM session WHERE id=1").fetchone()
     return row if row and row["expires_at"]>_now() else None
 
@@ -114,11 +117,14 @@ def arm(minutes=15):
 
 def disarm():
     """Emergency stop: callable from CLI without an active session."""
+    from . import delegation
+    revocation = delegation.revoke()
     now=_now()
     with _connect() as conn:
         conn.execute("DELETE FROM session")
         conn.execute("UPDATE requests SET status='cancelled',body='' WHERE status='queued'")
     return {"armed":False,"stopped_at":now,
+            "delegation_revocation":revocation,
             "note":"Pending commands cancelled; already dispatched game commands cannot be undone."}
 
 def status(request_id=None,limit=15):
@@ -133,7 +139,8 @@ def status(request_id=None,limit=15):
         online=last_poll is not None and _now()-last_poll<12
         result={"enabled_in_environment":os.environ.get("CFX_LIVE_ENABLE")=="1" and os.environ.get("CFX_LIVE_MODE")=="full",
                 "armed":session is not None,
-                "arm_expires_at":session["expires_at"] if session else None,
+                "arm_expires_at":session["expires_at"] if session and session["reason"]!="owner-delegated-until-revoked" else None,
+                "authorization_mode":session["reason"] if session else "locked",
                 "server_poll_recent":online,"last_poll_at":last_poll,
                 "mode":"full" if session else "locked","bound_host":HOST,"port":PORT}
         if request_id:
@@ -169,12 +176,12 @@ def _payload(kind,body,target):
         if data:raise ValueError("This operation expects {}")
     elif kind=="server_command":
         if set(data)!={"command"} or not isinstance(data["command"],str) or not 1<=len(data["command"])<=2000:
-            raise ValueError("Expected one FXServer console command string of 1–2000 characters")
+            raise ValueError("Expected one FXServer console command string of 1â€“2000 characters")
         if any(x in data["command"] for x in "\n\r\x00"):
             raise ValueError("Console commands must be a single line")
     elif kind in ("server_lua","client_lua"):
         if set(data)!={"code"} or not isinstance(data["code"],str) or not 1<=len(data["code"])<=16000:
-            raise ValueError("Lua payload must contain 1–16000 characters of code")
+            raise ValueError("Lua payload must contain 1â€“16000 characters of code")
     elif kind=="client_action":
         op=data.get("action")
         if op not in ACTIONS:raise ValueError("Unknown client action")
@@ -199,9 +206,10 @@ def submit(kind,payload_json="{}",target=0):
     data=_payload(kind,payload_json,target)
     encoded=json.dumps(data,separators=(",",":"),ensure_ascii=False)
     with _connect() as conn:
+        conn.execute("BEGIN IMMEDIATE")
         _expiry(conn)
         session=_active(conn)
-        if session is None:raise ValueError("Full control not armed. Owner must run 'cfx-devkit live-arm' in an interactive terminal")
+        if session is None:raise ValueError("Full control is not authorized. Use explicit owner delegation or the manual live-arm approval")
         deadline=min(session["expires_at"],_now()+REQUEST_TTL)
         request_id=secrets.token_hex(16)
         conn.execute("INSERT INTO requests VALUES(?,?,?,?,?,?,?,NULL,NULL)",
@@ -252,7 +260,7 @@ def tail_log(channel="server",lines=60,contains=""):
     _config()
     if channel not in ("server","client"):raise ValueError("Log channel must be server or client")
     if not isinstance(lines,int) or isinstance(lines,bool) or not 1<=lines<=200:
-        raise ValueError("Lines must be 1–200")
+        raise ValueError("Lines must be 1â€“200")
     if not isinstance(contains,str) or len(contains)>120:
         raise ValueError("Invalid search pattern")
     with _connect() as conn:
