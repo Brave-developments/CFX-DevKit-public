@@ -23,6 +23,9 @@ to install or enable control.
    request authorizes normal setup; repeat with `--apply`. The installer creates
    the Python environment, installs the runtime, merges MCP settings, generates a
    private token, and prepares the connection resource and private server config.
+   If full reference coverage is requested, add `--sync-references` (development
+   or both profiles); if runtime diagnostics are requested, add `--diagnostics`.
+   Check resulting dataset counts/completeness. Do not publish downloaded data.
 4. Do not print private settings, token values, server.cfg contents or credential
    files. Do not modify the AI host's permission/approval records.
 5. The user enables the connector in their AI app if required by that app. The
@@ -30,6 +33,7 @@ to install or enable control.
 6. After modifying a real resource, run relevant checks. On an already running
    server, use an existing authorized console connection to run
    `exec .cfx-devkit/connection.cfg`, `refresh`, then `ensure cfx-devkit-live`.
+   With diagnostics enabled, also ensure only `cfx-devkit-reporter`.
    Do not print the private config or its token. Restart only that resource if
    necessary through the available authorized MCP connection. Never restart
    the whole server. If there is no connection, explain that resource startup is

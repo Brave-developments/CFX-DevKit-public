@@ -153,7 +153,7 @@ CALLS={
     'cfx_lua_ast_index':lambda a:ast_analysis.analyze_project(a.get('path','.')),
     'cfx_lua_ast_network_review':lambda a:ast_analysis.audit_network_handlers(a.get('path','.')),
     'cfx_bridge_recent':lambda a:devbridge.read_events(a.get('limit',50),a.get('resource','')),
-    'cfx_bridge_setup':lambda a:{'enabled_by_default':False,'bind':'127.0.0.1','port':8765,'requirements':['Run on same machine as development FXServer','CFX_BRIDGE_ENABLE=1','CFX_BRIDGE_TOKEN: 32+ printable ASCII characters','Private server.cfg set devkit_bridge_enable 1','Private server.cfg set devkit_bridge_token <token>','ensure cfx-devkit-reporter'],'documentation':'docs/DEV_BRIDGE.md','capabilities':['sanitized resource lifecycle/error-category ingestion'],'remote_commands':False},
+    'cfx_bridge_setup':lambda a:devbridge.setup_status(),
     'cfx_control_status':lambda a:controlbridge.status(a.get('request_id') or None),
     'cfx_control_propose':lambda a:controlbridge.propose(a['action'],a['resource'],a['reason']),
     'cfx_control_result':lambda a:controlbridge.status(a['request_id']),

@@ -8,7 +8,7 @@ import json
 import os
 import threading
 
-from . import livecontrol, profiles, server
+from . import livecontrol, profiles, server, devbridge
 
 ENV_KEYS = frozenset({
     "CFX_WORKSPACE_ROOT", "CFX_ENABLE_WRITES", "CFX_ENABLE_NETWORK",
@@ -16,6 +16,7 @@ ENV_KEYS = frozenset({
     "CFX_LIVE_SERVER_LOG", "CFX_LIVE_CLIENT_LOG",
     "CFX_DEVKIT_DATA_DIR",
     "CFX_LIVE_POLICY_FILE",
+    "CFX_BRIDGE_ENABLE", "CFX_BRIDGE_TOKEN",
 })
 
 
@@ -46,14 +47,24 @@ def main():
         print(json.dumps(livecontrol.arm()))
         return
     broker = livecontrol.make_server()
-    thread = threading.Thread(target=broker.serve_forever, daemon=True)
-    thread.start()
+    brokers = [broker]
+    try:
+        if os.environ.get("CFX_BRIDGE_ENABLE") == "1":
+            brokers.append(devbridge.make_server())
+    except Exception:
+        broker.server_close()
+        raise
+    threads = [threading.Thread(target=item.serve_forever, daemon=True) for item in brokers]
+    for thread in threads:
+        thread.start()
     try:
         server.main(profiles.tool_names("txadmin"))
     finally:
-        broker.shutdown()
-        broker.server_close()
-        thread.join(timeout=3)
+        for item in brokers:
+            item.shutdown()
+            item.server_close()
+        for thread in threads:
+            thread.join(timeout=3)
 
 
 if __name__ == "__main__":

@@ -55,4 +55,13 @@ or with the MCP `cfx_bridge_recent` tool. This only reads local previously recei
 5. Disable the dev bridge and ensure no further reports are delivered.
 6. Remove the resource before production deployment.
 
-Passing CI proves the HTTP contract in an isolated test process. CI does **not** perform steps 2–6 against a real FiveM runtime.
+Passing CI proves the HTTP contract in an isolated test process. CI does **not** perform steps 2â€“6 against a real FiveM runtime.
+
+## Automatic installation
+
+Use `install.py --diagnostics` to let an authorized AI prepare the reporter,
+private token and host settings. See [AI installation](AI_INSTALLATION.md).
+The integration process starts/stops the receiver automatically. The resource
+still needs to be loaded on the selected server. `cfx_bridge_setup` reports current
+configuration, authenticated receiver reachability and recorded history separately.
+This is lifecycle/category telemetry, not a generic traceback or player-data feed.

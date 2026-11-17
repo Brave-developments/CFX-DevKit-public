@@ -118,3 +118,31 @@ Revocation uses the protected grant identity even if the server config is
 temporarily missing, the token is mismatched or the policy is currently disabled.
 If no readable valid grant identity exists, `--revoke` reports incomplete
 delegation revocation and exits unsuccessfully; it does not claim a lasting stop.
+
+## Full local references and read-only diagnostics
+
+Add `--sync-references` when the owner requests full native/animation coverage.
+It fetches official GTA V/CFX native JSON and the attributed upstream animation
+snapshot into the development package's user-local cache. The installer checks
+that native sources are cached and animations report complete; it does not mark
+seed-only data as successful. Only download subprocesses receive network opt-in.
+Normal MCP environments retain `CFX_ENABLE_NETWORK=0`. Full downloaded data is
+not copied into GitHub or the distributable packages. Availability depends on
+the upstream services and installed game build; animation presence does not prove
+runtime playability. Use the development profile or both profiles for references.
+
+Add `--diagnostics` to prepare `cfx-devkit-reporter`, a separate private diagnostics
+token, its private convars and the resource ensure. The integration MCP process
+starts both the Full Control broker and the independent read-only diagnostics
+receiver, then closes both when it exits. Failure to bind either port stops the
+connection; it does not attach to an unknown listener.
+
+Load the private convars and start only the affected resources through an existing
+authorized connection. If no connection is available, startup remains pending.
+Neither flag bypasses host approval or the managed txAdmin review gate.
+
+`cfx_bridge_setup` now separates `configured`, `receiver_reachable`, and
+`records_present` from `enabled_by_default`. The last field describes the default,
+not whether the current install is enabled. The reporter emits lifecycle events
+and explicit safe error categories. It does not capture arbitrary Lua tracebacks;
+use configured console logs or explicit error-category instrumentation for those.

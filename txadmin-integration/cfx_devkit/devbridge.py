@@ -85,6 +85,33 @@ def read_events(limit=50,resource=""):
             "record_count":sum(counts.values()),"counts":dict(counts),
             "note":"Local validated resource-only records. No live client screenshots, player identities or remote commands."}
 
+def setup_status():
+    """Report configuration separately from receiver health and recorded history."""
+    configured = False
+    reachable = False
+    try:
+        _enabled()
+        configured = True
+        from urllib.request import Request, build_opener, ProxyHandler
+        from .performance import NoRedirect
+        request = Request("http://127.0.0.1:8765/health", headers={"X-CFX-DevKit-Token": _token()})
+        with build_opener(ProxyHandler({}), NoRedirect()).open(request, timeout=1) as response:
+            data = json.loads(response.read(MAX_BODY + 1))
+        reachable = data.get("ok") is True and data.get("read_only") is True
+    except (OSError, ValueError, TypeError, AttributeError):
+        pass
+    history = read_events(limit=1)
+    return {"enabled_by_default": False, "configured": configured,
+            "receiver_reachable": reachable, "records_present": bool(history.get("events")),
+            "bind": HOST, "port": PORT,
+            "requirements": ["CFX_BRIDGE_ENABLE=1", "CFX_BRIDGE_TOKEN: 32+ printable ASCII characters",
+                "set devkit_bridge_enable 1", "set devkit_bridge_token <private token>", "ensure cfx-devkit-reporter"],
+            "capabilities": ["sanitized resource lifecycle and explicitly reported error categories"],
+            "raw_console_capture": False, "remote_commands": False,
+            "documentation": "docs/DEV_BRIDGE.md",
+            "note": "Recorded events do not prove current server liveness; arbitrary Lua errors require console logs or explicit reporting."}
+
+
 def make_server(port=PORT):
     _enabled()
     if not isinstance(port,int) or not (port==0 or 1024<=port<=65535):raise ValueError("Port must be 1024..65535 (or 0 for isolated tests)")

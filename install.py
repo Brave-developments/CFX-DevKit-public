@@ -174,9 +174,11 @@ def configure_host(path, host, entries):
     return json.dumps(data, indent=2) + "\n"
 
 
-def prepare(workspace, host, profile="both", server_cfg=None, home=None, unattended=False, port=30120, launch_target=None):
+def prepare(workspace, host, profile="both", server_cfg=None, home=None, unattended=False, port=30120, launch_target=None, diagnostics=False):
     if unattended and profile == "development":
         raise ValueError("Unattended control requires the integration profile")
+    if diagnostics and profile == "development":
+        raise ValueError("Diagnostics requires the integration profile")
     if launch_target is not None and not re.fullmatch(r"[a-f0-9]{64}", launch_target):
         raise ValueError("Server launch target must be the complete verified target_id")
     workspace = Path(workspace).resolve()
@@ -187,7 +189,9 @@ def prepare(workspace, host, profile="both", server_cfg=None, home=None, unatten
     home = Path(home or Path.home()).resolve()
     config_path = checked(workspace / ".roo/mcp.json", workspace) if host == "roo" else host_path(host, home)
     python = ROOT / ".venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
-    env = {"CFX_WORKSPACE_ROOT": str(workspace), "CFX_ENABLE_WRITES": "0", "CFX_ENABLE_NETWORK": "0"}
+    references = checked(ROOT / ".cfx-devkit/reference-data", ROOT)
+    env = {"CFX_WORKSPACE_ROOT": str(workspace), "CFX_ENABLE_WRITES": "0", "CFX_ENABLE_NETWORK": "0",
+           "CFX_DEVKIT_DATA_DIR": str(references)}
     entries = {}
     changes = []
     if profile in {"both", "development"}:
@@ -214,12 +218,18 @@ def prepare(workspace, host, profile="both", server_cfg=None, home=None, unatten
                   "port": port, "server_launch_target": launch_target, "permissions": permissions}
         live_env = {**env, "CFX_LIVE_ENABLE": "1", "CFX_LIVE_MODE": "full", "CFX_LIVE_TOKEN": token,
                     "CFX_DEVKIT_DATA_DIR": str(cache), "CFX_LIVE_POLICY_FILE": str(policy_file)}
+        bridge_token = None
+        if diagnostics:
+            bridge_token = secrets.token_urlsafe(48)
+            live_env.update(CFX_BRIDGE_ENABLE="1", CFX_BRIDGE_TOKEN=bridge_token)
         settings = json.dumps({"env": live_env}, indent=2) + "\n"
         private_cfg = checked(private / "connection.cfg", workspace)
         cfg_text = cfg.read_text(encoding="utf-8-sig")
         outside_block = re.sub(re.escape(BEGIN) + r".*?" + re.escape(END), "", cfg_text, flags=re.S)
         if re.search(r"^\s*(?:setr?\s+devkit_live_|ensure\s+cfx-devkit-live\b)", outside_block, re.M):
             raise ValueError("Existing bridge configuration needs migration; no files changed")
+        if diagnostics and re.search(r"^\s*(?:setr?\s+devkit_bridge_|ensure\s+cfx-devkit-reporter\b)", outside_block, re.M):
+            raise ValueError("Existing diagnostics configuration needs migration; no files changed")
         resource = checked(resources / "cfx-devkit-live", workspace)
         source = ROOT / "txadmin-integration/examples/cfx-devkit-live"
         if not source.is_dir():
@@ -233,14 +243,52 @@ def prepare(workspace, host, profile="both", server_cfg=None, home=None, unatten
             if target.exists() and target.read_text(encoding="utf-8") != content:
                 raise ValueError("Existing connection resource differs; refusing to overwrite it")
             changes.append((target, content))
+        diagnostic_cfg = ""
+        diagnostic_ensure = ""
+        if diagnostics:
+            source = ROOT / "txadmin-integration/examples/cfx-devkit-reporter"
+            if not source.is_dir():
+                source = ROOT / "examples/cfx-devkit-reporter"
+            for name in ("fxmanifest.lua", "server.lua"):
+                content = (source / name).read_text(encoding="utf-8")
+                if name == "fxmanifest.lua" and "lua54" not in content:
+                    content += "\nlua54 'yes'\n"
+                target = checked(resources / "cfx-devkit-reporter" / name, workspace)
+                if target.exists() and target.read_text(encoding="utf-8") != content:
+                    raise ValueError("Existing reporter differs; refusing to overwrite it")
+                changes.append((target, content))
+            diagnostic_cfg = 'set devkit_bridge_enable 1\nset devkit_bridge_token "' + bridge_token + '"\n'
+            diagnostic_ensure = "\nensure cfx-devkit-reporter"
         changes.extend([(state, settings), (policy_file, json.dumps(policy, indent=2) + "\n"), (private_cfg,
             'set devkit_live_enable 1\nset devkit_live_mode "full"\n'
-            + 'set devkit_live_token "' + token + '"\nsetr devkit_live_client_enabled 0\n'),
-            (cfg, managed_block(cfg_text, 'exec .cfx-devkit/connection.cfg\nensure cfx-devkit-live'))])
+            + 'set devkit_live_token "' + token + '"\nsetr devkit_live_client_enabled 0\n' + diagnostic_cfg),
+            (cfg, managed_block(cfg_text, 'exec .cfx-devkit/connection.cfg\nensure cfx-devkit-live' + diagnostic_ensure))])
         entries["cfx-txadmin"] = {"type": "stdio", "command": str(python),
             "args": ["-m", "cfx_devkit.connection", "--settings", str(state)], "env": env}
     changes.append((config_path, configure_host(config_path, host, entries)))
     return python, changes
+
+
+def sync_references(python):
+    env = {**os.environ, "CFX_ENABLE_NETWORK": "1", "CFX_DEVKIT_DATA_DIR": str(ROOT / ".cfx-devkit/reference-data")}
+    for command in ("sync-natives", "sync-animations"):
+        result = subprocess.run([str(python), "-m", "cfx_devkit.cli", command],
+                                env=env, capture_output=True, text=True, timeout=240)
+        if result.returncode:
+            raise ValueError("Reference download failed; previous validated caches remain usable")
+    statuses = {}
+    for command in ("native-status", "animation-status"):
+        result = subprocess.run([str(python), "-m", "cfx_devkit.cli", command],
+                                env={**env, "CFX_ENABLE_NETWORK": "0"}, capture_output=True, text=True, timeout=30)
+        if result.returncode:
+            raise ValueError("Reference status verification failed")
+        statuses[command] = json.loads(result.stdout)
+    datasets = statuses["native-status"].get("datasets", {})
+    if (any(datasets.get(name, {}).get("origin") != "cached" or
+            datasets.get(name, {}).get("count", 0) < 200 for name in ("gta5", "cfx"))
+            or statuses["animation-status"].get("complete") is not True):
+        raise ValueError("Reference sync did not produce validated full datasets")
+    return statuses
 
 
 def main():
@@ -254,9 +302,14 @@ def main():
                         help="Delegate console/Lua, FiveM launch and foreground input until revoked; server launch additionally requires --server-launch-target")
     parser.add_argument("--port", type=int, default=30120)
     parser.add_argument("--server-launch-target", help="Complete selected target_id from cfx_fxserver_status; omitted means no delegated server launch")
+    parser.add_argument("--diagnostics", action="store_true", help="Install the read-only resource reporter and automatically run its loopback receiver")
+    parser.add_argument("--sync-references", action="store_true", help="Download native/animation references to this user's local cache; no redistribution")
     args = parser.parse_args()
+    if args.sync_references and args.profile == "integration":
+        parser.error("Reference downloads require the development profile or both profiles")
     python, changes = prepare(args.workspace, args.host, args.profile, args.server_cfg,
-                              unattended=args.allow_unattended_control, port=args.port, launch_target=args.server_launch_target)
+                              unattended=args.allow_unattended_control, port=args.port, launch_target=args.server_launch_target,
+                              diagnostics=args.diagnostics)
     if not args.apply:
         print(json.dumps({"preview": True, "files": [str(path) for path, _ in changes],
                           "unattended_control": args.allow_unattended_control,
@@ -264,6 +317,7 @@ def main():
                                                     (["server-launch"] if args.server_launch_target else [])) if args.allow_unattended_control else [],
                           "delegation_duration": "until revoked" if args.allow_unattended_control else None,
                           "server_launch_target": args.server_launch_target,
+                          "diagnostics": args.diagnostics, "download_references": args.sync_references,
                           "next": "Repeat with --apply after reviewing the selected paths and privileges"}))
         return
     if not python.exists():
@@ -273,16 +327,18 @@ def main():
         package = ROOT
     # Dependency installation finishes before modifying any server or host files.
     subprocess.run([str(python), "-m", "pip", "install", str(package)], check=True)
+    references = sync_references(python) if args.sync_references else None
     apply_changes(changes)
     print(json.dumps({"installed": True, "host": args.host, "server_restarted": False,
         "delegation_enabled": args.allow_unattended_control, "client_execution_enabled": False,
+        "diagnostics_configured": args.diagnostics, "references": references,
         "next": "Enable the connector in your AI app. Load cfx-devkit-live through an existing authorized connection or the next normal server start. Unattended delegation removes CFX terminal arming only; host approvals and the native txAdmin review gate remain."}))
 
 
 if __name__ == "__main__":
     try:
         main()
-    except (ValueError, OSError, subprocess.CalledProcessError):
+    except (ValueError, OSError, subprocess.SubprocessError):
         # Never render config contents, tokens, pip environment or raw exceptions.
         print("Installation failed. Check selected paths, existing bridge/config conflicts, and Python installation.", file=sys.stderr)
         sys.exit(1)

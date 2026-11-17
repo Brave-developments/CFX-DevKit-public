@@ -12,6 +12,7 @@ from unittest.mock import patch, Mock
 from cfx_devkit import connection
 from cfx_devkit import livecontrol, clientlaunch, gameinput, fxserverlaunch
 from cfx_devkit import delegation
+from cfx_devkit import devbridge
 
 ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "install.py").is_file())
 spec = importlib.util.spec_from_file_location("installer", ROOT / "install.py")
@@ -133,6 +134,69 @@ class InstallerTests(unittest.TestCase):
             main.assert_called_once()
             broker.shutdown.assert_called_once()
             broker.server_close.assert_called_once()
+
+    def test_diagnostics_installs_private_reporter_and_separate_credentials(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            workspace, home = self.fixture(Path(temporary))
+            _, changes = installer.prepare(workspace, "freebuff", home=home, diagnostics=True)
+            installer.apply_changes(changes)
+            env = connection.load_settings(workspace / ".cfx-devkit/connection.json")
+            self.assertEqual(env["CFX_BRIDGE_ENABLE"], "1")
+            self.assertNotEqual(env["CFX_BRIDGE_TOKEN"], env["CFX_LIVE_TOKEN"])
+            self.assertIn("ensure cfx-devkit-reporter", (workspace / "server.cfg").read_text())
+            self.assertIn("lua54 'yes'", (workspace / "resources/cfx-devkit-reporter/fxmanifest.lua").read_text())
+            config = json.loads((home / ".agents/mcp.json").read_text())
+            self.assertNotIn(env["CFX_BRIDGE_TOKEN"], json.dumps(config))
+            self.assertEqual(config["mcpServers"]["cfx-development"]["env"]["CFX_ENABLE_NETWORK"], "0")
+            self.assertNotEqual(config["mcpServers"]["cfx-development"]["env"]["CFX_DEVKIT_DATA_DIR"], env["CFX_DEVKIT_DATA_DIR"])
+
+    def test_connection_closes_both_receivers(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "settings.json"
+            path.write_text(json.dumps({"env": {"CFX_BRIDGE_ENABLE": "1", "CFX_BRIDGE_TOKEN": "x" * 48}}))
+            full, diagnostic = Mock(), Mock()
+            with patch.dict(os.environ, {}), patch("sys.argv", ["connection", "--settings", str(path)]), \
+                 patch.object(connection.livecontrol, "make_server", return_value=full), \
+                 patch.object(connection.devbridge, "make_server", return_value=diagnostic), \
+                 patch.object(connection.server, "main"):
+                connection.main()
+            for receiver in (full, diagnostic):
+                receiver.shutdown.assert_called_once()
+                receiver.server_close.assert_called_once()
+
+    def test_diagnostics_bind_failure_closes_full_broker(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "settings.json"
+            path.write_text(json.dumps({"env": {"CFX_BRIDGE_ENABLE": "1"}}))
+            full = Mock()
+            with patch.dict(os.environ, {}), patch("sys.argv", ["connection", "--settings", str(path)]), \
+                 patch.object(connection.livecontrol, "make_server", return_value=full), \
+                 patch.object(connection.devbridge, "make_server", side_effect=OSError("occupied")):
+                with self.assertRaises(OSError):
+                    connection.main()
+            full.server_close.assert_called_once()
+            full.shutdown.assert_not_called()
+
+    def test_reference_downloads_are_explicit_and_verified_without_persistent_network(self):
+        completed = lambda value: Mock(returncode=0, stdout=json.dumps(value))
+        native = {"datasets": {key: {"origin": "cached", "count": 500} for key in ("gta5", "cfx")}}
+        animation = {"complete": True}
+        with patch.object(installer.subprocess, "run", side_effect=[completed({}), completed({}), completed(native), completed(animation)]) as run:
+            result = installer.sync_references(Path("python"))
+            self.assertTrue(result["animation-status"]["complete"])
+            self.assertEqual([call.kwargs["env"]["CFX_ENABLE_NETWORK"] for call in run.call_args_list], ["1", "1", "0", "0"])
+        with patch.object(installer.subprocess, "run", side_effect=[completed({}), completed({}), completed({"datasets": {}}), completed({"complete": False})]):
+            with self.assertRaises(ValueError):
+                installer.sync_references(Path("python"))
+
+    def test_diagnostics_defaults_and_recorded_history_are_separate(self):
+        with tempfile.TemporaryDirectory() as temporary, patch.dict(os.environ, {"CFX_DEVKIT_DATA_DIR": temporary, "CFX_BRIDGE_ENABLE": "0"}):
+            devbridge.append_record({"event": "resource_started", "resource": "fixture"})
+            state = devbridge.setup_status()
+            self.assertFalse(state["configured"])
+            self.assertFalse(state["receiver_reachable"])
+            self.assertTrue(state["records_present"])
+            self.assertFalse(state["raw_console_capture"])
 
     def test_unattended_opt_in_revocation_and_token_binding(self):
         with tempfile.TemporaryDirectory() as temporary:
