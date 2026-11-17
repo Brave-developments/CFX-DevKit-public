@@ -28,6 +28,25 @@ is currently disabled pending independent security review. MCP setup does not
 unlock it. See [startup support](txadmin-integration/docs/FXSERVER_STARTUP.md) and
 [review status](txadmin-integration/docs/TXADMIN_SECURITY_REVIEW.md).
 
+## Ask your AI to install it
+
+Give an AI with local file/shell access this request:
+
+> Install CFX DevKit for Freebuff using my FiveM server folder. Run the installer
+> preview, verify the target server, then apply setup. Handle files, dependencies
+> and tokens yourself; tell me which connection or approval steps remain.
+
+From a downloaded checkout, the AI runs `python install.py --host freebuff
+--workspace "C:/FiveM"`, checks the preview, then repeats with `--apply`.
+Other installer hosts: `cursor`, `claude` (Claude Code), `gemini`, `roo`, `copilot`,
+and `codex`. Add `--server-cfg` if multiple server profiles exist.
+
+This automates installation, private token generation, host configuration and the
+server connection resource. The integration starts its own local broker. Host
+connector approval and the existing human Full Control arming are still separate;
+app-only authorization has not replaced terminal arming. See
+[AI installation details](txadmin-integration/docs/AI_INSTALLATION.md).
+
 ## 1. Download and install
 
 Install Git and Python 3.10 or newer, then run these commands in a terminal.
